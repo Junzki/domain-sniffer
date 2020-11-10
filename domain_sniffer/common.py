@@ -101,7 +101,7 @@ def detect_address_family(address):
         except (TypeError, ValueError, OSError, IOError):
             pass
 
-    raise ValueError(f'{address} seems neither an IPv4 nor an IPv6 address.')
+    return None
 
 
 # def patch_socket():
