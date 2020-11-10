@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # Copyright 2015 clowwindy
@@ -95,54 +94,3 @@ class LRUCache(collections.MutableMapping):
         if c:
             self._closed_values.clear()
             logging.debug('%d keys swept' % c)
-
-
-def test():
-    c = LRUCache(timeout=0.3)
-
-    c['a'] = 1
-    assert c['a'] == 1
-
-    time.sleep(0.5)
-    c.sweep()
-    assert 'a' not in c
-
-    c['a'] = 2
-    c['b'] = 3
-    time.sleep(0.2)
-    c.sweep()
-    assert c['a'] == 2
-    assert c['b'] == 3
-
-    time.sleep(0.2)
-    c.sweep()
-    c['b']
-    time.sleep(0.2)
-    c.sweep()
-    assert 'a' not in c
-    assert c['b'] == 3
-
-    time.sleep(0.5)
-    c.sweep()
-    assert 'a' not in c
-    assert 'b' not in c
-
-    global close_cb_called
-    close_cb_called = False
-
-    def close_cb(t):
-        global close_cb_called
-        assert not close_cb_called
-        close_cb_called = True
-
-    c = LRUCache(timeout=0.1, close_callback=close_cb)
-    c['s'] = 1
-    c['t'] = 1
-    c['s']
-    time.sleep(0.1)
-    c['s']
-    time.sleep(0.3)
-    c.sweep()
-
-if __name__ == '__main__':
-    test()

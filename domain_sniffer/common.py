@@ -91,7 +91,7 @@ def to_str(s):
 #         raise RuntimeError("What family?")
 
 
-def is_ip(address):
+def detect_address_family(address):
     for family in (socket.AF_INET, socket.AF_INET6):
         try:
             if type(address) != str:
@@ -100,7 +100,8 @@ def is_ip(address):
             return family
         except (TypeError, ValueError, OSError, IOError):
             pass
-    return False
+
+    raise ValueError(f'{address} seems neither an IPv4 nor an IPv6 address.')
 
 
 # def patch_socket():
@@ -121,21 +122,21 @@ def is_ip(address):
 # ADDRTYPE_MASK = 0xF
 
 
-def pack_addr(address):
-    address_str = to_str(address)
-    address = to_bytes(address)
-    for family in (socket.AF_INET, socket.AF_INET6):
-        try:
-            r = socket.inet_pton(family, address_str)
-            if family == socket.AF_INET6:
-                return b'\x04' + r
-            else:
-                return b'\x01' + r
-        except (TypeError, ValueError, OSError, IOError):
-            pass
-    if len(address) > 255:
-        address = address[:255]  # TODO
-    return b'\x03' + chr(len(address)) + address
+# def pack_addr(address):
+#     address_str = to_str(address)
+#     address = to_bytes(address)
+#     for family in (socket.AF_INET, socket.AF_INET6):
+#         try:
+#             r = socket.inet_pton(family, address_str)
+#             if family == socket.AF_INET6:
+#                 return b'\x04' + r
+#             else:
+#                 return b'\x01' + r
+#         except (TypeError, ValueError, OSError, IOError):
+#             pass
+#     if len(address) > 255:
+#         address = address[:255]  # TODO
+#     return b'\x03' + chr(len(address)) + address
 
 
 # # add ss header
@@ -198,7 +199,7 @@ class IPNetwork(object):
         if addr is "":
             return
         block = addr.split('/')
-        addr_family = is_ip(block[0])
+        addr_family = detect_address_family(block[0])
         addr_len = IPNetwork.ADDRLENGTH[addr_family]
         if addr_family is socket.AF_INET:
             ip, = struct.unpack("!I", socket.inet_aton(block[0]))
@@ -225,7 +226,7 @@ class IPNetwork(object):
             self._network_list_v6.append((ip, prefix_size))
 
     def __contains__(self, addr):
-        addr_family = is_ip(addr)
+        addr_family = detect_address_family(addr)
         if addr_family is socket.AF_INET:
             ip, = struct.unpack("!I", socket.inet_aton(addr))
             return any(map(lambda n_ps: n_ps[0] == ip >> n_ps[1],
@@ -258,11 +259,11 @@ class IPNetwork(object):
 #         (4, b'2404:6800:4005:805::1011', 80, 19)
 
 
-def test_pack_header():
-    assert pack_addr(b'8.8.8.8') == b'\x01\x08\x08\x08\x08'
-    assert pack_addr(b'2404:6800:4005:805::1011') == \
-        b'\x04$\x04h\x00@\x05\x08\x05\x00\x00\x00\x00\x00\x00\x10\x11'
-    assert pack_addr(b'www.google.com') == b'\x03\x0ewww.google.com'
+# def test_pack_header():
+#     assert pack_addr(b'8.8.8.8') == b'\x01\x08\x08\x08\x08'
+#     assert pack_addr(b'2404:6800:4005:805::1011') == \
+#         b'\x04$\x04h\x00@\x05\x08\x05\x00\x00\x00\x00\x00\x00\x10\x11'
+#     assert pack_addr(b'www.google.com') == b'\x03\x0ewww.google.com'
 
 
 def test_ip_network():
@@ -283,5 +284,5 @@ def test_ip_network():
 if __name__ == '__main__':
     # test_inet_conv()
     # test_parse_header()
-    test_pack_header()
+    # test_pack_header()
     test_ip_network()

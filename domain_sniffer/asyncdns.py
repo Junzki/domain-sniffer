@@ -20,7 +20,7 @@ import struct
 import re
 import logging
 
-from .common import ord, chr, is_ip
+from .common import ord, chr, detect_address_family
 from .lru_cache import LRUCache
 from . import eventloop
 
@@ -194,6 +194,7 @@ def parse_response(data):
             header = parse_header(data)
             if not header:
                 return None
+
             res_id, res_qr, res_tc, res_ra, res_rcode, res_qdcount, \
                 res_ancount, res_nscount, res_arcount = header
 
@@ -289,7 +290,7 @@ class DNSResolver(object):
                         continue
 
                     server = parts[1]
-                    if is_ip(server) == socket.AF_INET:
+                    if detect_address_family(server) == socket.AF_INET:
                         if type(server) != str:
                             server = server.decode('utf8')
                         self._servers.append(server)
@@ -311,7 +312,7 @@ class DNSResolver(object):
                         continue
 
                     ip = parts[0]
-                    if not is_ip(ip):
+                    if not detect_address_family(ip):
                         continue
 
                     for i in range(1, len(parts)):
@@ -418,7 +419,7 @@ class DNSResolver(object):
             hostname = hostname.encode('utf8')
         if not hostname:
             callback(None, Exception('empty hostname'))
-        elif is_ip(hostname):
+        elif detect_address_family(hostname):
             callback((hostname, hostname), None)
         elif hostname in self._hosts:
             logging.debug('hit hosts: %s', hostname)
